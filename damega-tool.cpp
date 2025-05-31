@@ -1,150 +1,173 @@
 #include <iostream>
-#include <cstdlib>
 #include <string>
-#include <vector>
-#include <thread>
-#include <chrono>
-#include <sstream>
-#include <map>
-
-#ifdef _WIN32
 #include <windows.h>
-#else
-#include <unistd.h>
-#endif
+#include <chrono>
+#include <thread>
+#include <sstream>
+#include <iomanip>
+#include <map>
+#include <cctype>
 
 using namespace std;
 
-void clearTerminal() {
-#ifdef _WIN32
+// «Â∆¡∫Ø ˝
+void clearScreen() {
     system("cls");
-#else
-    system("clear");
-#endif
 }
 
+// ¥Úø™‰Ø¿¿∆˜
 void openBrowser(const string& url) {
-#ifdef _WIN32
-    string cmd = "start " + url;
-#elif __APPLE__
-    string cmd = "open " + url;
-#else
-    string cmd = "xdg-open " + url;
-#endif
-    system(cmd.c_str());
+    ShellExecuteA(NULL, "open", url.c_str(), NULL, NULL, SW_SHOWNORMAL);
 }
 
-void newVersion() {
+// URL±‡¬Î∫Ø ˝
+string urlEncode(const string& value) {
+    ostringstream escaped;
+    escaped.fill('0');
+    escaped << hex;
+
+    for (char c : value) {
+        if (isalnum(c) || c == '-' || c == '_' || c == '.' || c == '~') {
+            escaped << c;
+            continue;
+        }
+        escaped << uppercase;
+        escaped << '%' << setw(2) << int((unsigned char)c);
+        escaped << nouppercase;
+    }
+
+    return escaped.str();
+}
+
+// ªÒ»°∏¸–¬
+void checkUpdate() {
     string url = "https://ouroooo.github.io/damega";
     openBrowser(url);
-    cout << "Â∑≤ÊâìÂºÄÈìæÊé•Ôºö" << url << endl;
+    cout << "“—¥Úø™¡¥Ω”£∫" << url << endl;
     this_thread::sleep_for(chrono::seconds(3));
-    clearTerminal();
+    clearScreen();
 }
 
+// µ«¬ºπ¶ƒ‹
 void loginDamega() {
     string url = "http://14.18.102.167:17001/edei/";
     openBrowser(url);
-    cout << "Â∑≤ÊâìÂºÄÈìæÊé•Ôºö" << url << endl;
+    cout << "“—¥Úø™¡¥Ω”£∫" << url << endl;
     this_thread::sleep_for(chrono::seconds(3));
-    clearTerminal();
+    clearScreen();
 }
 
-void getExamNum() {
-    cout << "ÊØèÁªÑËä±Êã¨Âè∑ÂÜÖÔºö\nexamNumÊòØËÄÉËØïÁ†Å\nexamNameÊòØÂØπÂ∫îÁöÑËÄÉËØï" << endl;
-    cout << "ËØ∑‰ªîÁªÜÈòÖËØªÔºå5ÁßíÂêéÊâßË°å" << endl;
+// ªÒ»°øº ‘¬Î
+void getExamNumber() {
+    cout << "√ø◊Èª®¿®∫≈ƒ⁄£∫\n"
+            "examNum «øº ‘¬Î\n"
+            "examName «∂‘”¶µƒøº ‘\n"
+            "«Î◊–œ∏‘ƒ∂¡£¨5√Î∫Û÷¥––" << endl;
     this_thread::sleep_for(chrono::seconds(5));
     string url = "http://14.18.102.167:17001/edei/qList!getExamAndGraAndSubData.action";
     openBrowser(url);
     cout << "ok" << endl;
     this_thread::sleep_for(chrono::seconds(3));
-    clearTerminal();
+    clearScreen();
 }
 
-void outputQuanxian(const string& baseUrl, const vector<string>& fixedParams) {
-    map<string, string> params;
-    for (const auto& param : fixedParams) {
-        cout << "examÊòØËÄÉËØïÁ†Å\nsNumÊòØÊéíÂêçËåÉÂõ¥ÔºåÂ¶Ç2000Â∞±ÂØºÂá∫Âà∞Á¨¨2000ÂêçÂ∑¶Âè≥\ngradeNumÊòØÂπ¥Á∫ßÔºåÂ¶Ç09" << endl;
-        string value;
-        cout << "ËØ∑ËæìÂÖ•ÂèÇÊï∞'" << param << "'ÁöÑÂÄº: ";
-        getline(cin, value);
-        params[param] = value;
-    }
-
-    string query;
+// ππ‘Ï≤Œ ˝URL
+string buildUrl(const string& baseUrl, const map<string, string>& params) {
+    stringstream query;
     for (const auto& [key, value] : params) {
-        query += key + "=" + value + "&";
+        query << "&" << key << "=" << urlEncode(value);
     }
-    if (!query.empty()) query.pop_back();
-
-    string fullUrl = baseUrl + "&" + query;
-    openBrowser(fullUrl);
-    cout << "Â∑≤ÊâìÂºÄÊµèËßàÂô®ÔºåË∑≥ËΩ¨Âà∞: " << fullUrl << endl;
+    return baseUrl + query.str();
 }
 
-void getSchoolId() {
-    cout << "ÊØèÁªÑÊã¨Âè∑ÂÜÖÔºö\nidÊòØÂ≠¶Ê†°‰ª£Á†Å\nNameÊòØÂØπÂ∫îÁöÑÂ≠¶Ê†°" << endl;
-    cout << "ËØ∑‰ªîÁªÜÈòÖËØªÔºå5ÁßíÂêéÊâßË°å" << endl;
+// µº≥ˆ»´œÿ≈≈√˚
+void exportRegionalRank() {
+    const string baseUrl = "http://14.18.102.167:17001/edei/g6!g6export.action?&schoolNum=196,199,201,185,190,192,195,198,189,184,180,183,191,182,193,188,187,204,197,200,194,181,186,331,203,206,202,205&classNum=&studentType=0&step=10&mingcistep=100&topStep=&E5step=null&B3mingcistep=null&type=0&c_exam=&rpt_name=A2-»´ø∆≥…º®&source=0&isHistory=F&isMoreSchool=T&rate=50&islevelclass=F&expTagType=null&reCalcu=F&fufen=0&subCompose=0&islevel=0&rptTitle=»•º≤ttkx&sch=1&subRank=-1&downRank=0&scoreName=1&shouxuanHide=0&isShowSubCompose=0";
+    
+    map<string, string> params;
+    cout << "exam «øº ‘¬Î\nsNum «≈≈√˚∑∂Œß£¨»Á2000æÕµº≥ˆµΩµ⁄2000√˚◊Û”“\ngradeNum «ƒÍº∂£¨»Á09\n";
+    
+    cout << "«Î ‰»ÎexamNum: ";
+    getline(cin, params["examNum"]);
+    
+    cout << "«Î ‰»ÎsNum: ";
+    getline(cin, params["sNum"]);
+    
+    cout << "«Î ‰»ÎgradeNum: ";
+    getline(cin, params["gradeNum"]);
+
+    string fullUrl = buildUrl(baseUrl, params);
+    openBrowser(fullUrl);
+    cout << "“—¥Úø™‰Ø¿¿∆˜£¨Ã¯◊™µΩ: " << fullUrl << endl;
+    this_thread::sleep_for(chrono::seconds(3));
+    clearScreen();
+}
+
+//ªÒ»°—ß–£¥˙¬Î
+void getSchoolcode()
+{
+    cout << "√ø◊È¿®∫≈ƒ⁄£∫\n"
+            "id «—ß–£¥˙¬Î\n"
+            "Name «∂‘”¶µƒ—ß–£\n"
+            "«Î◊–œ∏‘ƒ∂¡£¨5√Î∫Û÷¥––" << endl;
     this_thread::sleep_for(chrono::seconds(5));
     string url = "http://14.18.102.167:17001/edei/jsp/main/stasticAction!getAllTeachUnitInfo.action?exam=35&grade=9&subCompose=0&islevel=1&subject=101&level=0&sType=";
     openBrowser(url);
     cout << "ok" << endl;
     this_thread::sleep_for(chrono::seconds(3));
-    clearTerminal();
+    clearScreen();
 }
 
-void outputQuanxiao(const string& baseUrl, const vector<string>& fixedParams) {
+//ªÒ»°»´–£≈≈√˚
+void getSchool()
+{
+     const string baseUrl = "http://14.18.102.167:17001/edei/g6!g6export.action?&studentType=0&step=10&mingcistep=100&topStep=&E5step=null&B3mingcistep=null&type=0&sNum=6000&c_exam=&rpt_name=A2-%E5%85%A8%E7%A7%91%E6%88%90%E7%BB%A9&source=0&isHistory=F&isMoreSchool=F&rate=50&islevelclass=F&expTagType=null&reCalcu=F&fufen=0&subCompose=0&islevel=0&rptTitle=»•º≤ttkx&sch=&subRank=-1&downRank=0&scoreName=1&shouxuanHide=0&isShowSubCompose=0";
+    
     map<string, string> params;
-    for (const auto& param : fixedParams) {
-        cout << "examÊòØËÄÉËØïÁ†Å\ngradeNumÊòØÂπ¥Á∫ßÔºåÊØîÂ¶Ç09\nschoolNumÊòØÂ≠¶Ê†°‰ª£Á†Å" << endl;
-        string value;
-        cout << "ËØ∑ËæìÂÖ•ÂèÇÊï∞'" << param << "'ÁöÑÂÄº: ";
-        getline(cin, value);
-        params[param] = value;
-    }
+    cout << "exam «øº ‘¬Î\ngradeNum «ƒÍº∂£¨»Á09\nschoolNum «—ß–£¥˙¬Î";
+    
+    cout << "«Î ‰»ÎexamNum: ";
+    getline(cin, params["examNum"]);
+    
+    cout << "«Î ‰»ÎgradeNum: ";
+    getline(cin, params["gradeNum"]);
+    
+    cout << "«Î ‰»ÎschoolNum: ";
+    getline(cin, params["schoolNum"]);
 
-    string query;
-    for (const auto& [key, value] : params) {
-        query += key + "=" + value + "&";
-    }
-    if (!query.empty()) query.pop_back();
-
-    string fullUrl = baseUrl + "&" + query;
+    string fullUrl = buildUrl(baseUrl, params);
     openBrowser(fullUrl);
-    cout << "Â∑≤ÊâìÂºÄÊµèËßàÂô®ÔºåË∑≥ËΩ¨Âà∞: " << fullUrl << endl;
+    cout << "“—¥Úø™‰Ø¿¿∆˜£¨Ã¯◊™µΩ: " << fullUrl << endl;
+    this_thread::sleep_for(chrono::seconds(3));
+    clearScreen();
 }
-
 int main() {
-    const vector<string> fixedParams = {"examNum", "sNum", "gradeNum"};
-    const vector<string> fixedParams1 = {"examNum", "gradeNum", "schoolNum"};
-    const string baseUrl = "http://14.18.102.167:17001/edei/g6!g6export.action?&schoolNum=196,199,201,185,190,192,195,198,189,184,180,183,191,182,193,188,187,204,197,200,194,181,186,331,203,206,202,205&classNum=&studentType=0&step=10&mingcistep=100&topStep=&E5step=null&B3mingcistep=null&type=0&c_exam=&rpt_name=A2-ÂÖ®ÁßëÊàêÁª©&source=0&isHistory=F&isMoreSchool=T&rate=50&islevelclass=F&expTagType=null&reCalcu=F&fufen=0&subCompose=0&islevel=0&rptTitle=ÂéªÁñættkx&sch=1&subRank=-1&downRank=0&scoreName=1&shouxuanHide=0&isShowSubCompose=0";
-    const string baseUrl1 = "http://14.18.102.167:17001/edei/g6!g6export.action?&studentType=0&step=10&mingcistep=100&topStep=&E5step=null&B3mingcistep=null&type=0&sNum=6000&c_exam=&rpt_name=A2-%E5%85%A8%E7%A7%91%E6%88%90%E7%BB%A9&source=0&isHistory=F&isMoreSchool=F&rate=50&islevelclass=F&expTagType=null&reCalcu=F&fufen=0&subCompose=0&islevel=0&rptTitle=ÂéªÁñættkx&sch=&subRank=-1&downRank=0&scoreName=1&shouxuanHide=0&isShowSubCompose=0";
-
+    // …Ë÷√øÿ÷∆Ã®÷–Œƒ±‡¬Î
+    SetConsoleOutputCP(936);
+    
     while (true) {
-        cout << "Ê¨¢Ëøé‰ΩøÁî®ËææÁæéÂòâÂ∑•ÂÖ∑\nÂ¶ÇÊúâÁñëÈóÆËØ∑ËÅîÁ≥ªouroooo@163.com\n‰∏äÊ¨°Êõ¥Êñ∞Êó∂Èó¥:2025/02/01\nÂ∑•ÂÖ∑Êõ¥Êñ∞Âú∞ÂùÄhttps://ouroooo.github.io/damega" << endl;
-        cout << "1.ÁôªÂΩïËææÁæéÂòâ\n2.Ëé∑ÂèñËÄÉËØïÁ†Å\n3.ÂØºÂá∫Âàù‰∏≠ÂÖ®ÂéøÊéíÂêç\n4.Ëé∑ÂèñÂ≠¶Ê†°‰ª£Á†Å\n5.ÂØºÂá∫ÂÖ®Ê†°ÊéíÂêç\n6.Êü•ÊâæÊñ∞ÁâàÊú¨\nËØ∑ËæìÂÖ•ÈÄâÈ°πÔºö";
-        string input;
-        getline(cin, input);
+        cout << "ª∂”≠ π”√¥Ô√¿ºŒπ§æﬂ\n"
+                "»Á”–“…Œ «Î¡™œµouroooo@163.com\n"
+                "…œ¥Œ∏¸–¬ ±º‰:2025/02/01\n"
+                "π§æﬂ∏¸–¬µÿ÷∑https://ouroooo.github.io/damega\n\n"
+                "1.µ«¬º¥Ô√¿ºŒ\n"
+                "2.ªÒ»°øº ‘¬Î\n"
+                "3.µº≥ˆ≥ı÷–»´œÿ≈≈√˚\n"
+                "4.ªÒ»°—ß–£¥˙¬Î\n"
+                "5.µº≥ˆ»´–£≈≈√˚\n"
+                "6.≤È’“–¬∞Ê±æ\n"
+                "«Î ‰»Î—°œÓ£∫";
 
-        if (input == "1") {
-            loginDamega();
-        } else if (input == "2") {
-            getExamNum();
-        } else if (input == "3") {
-            outputQuanxian(baseUrl, fixedParams);
-            this_thread::sleep_for(chrono::seconds(3));
-            clearTerminal();
-        } else if (input == "4") {
-            getSchoolId();
-        } else if (input == "5") {
-            outputQuanxiao(baseUrl1, fixedParams1);
-            this_thread::sleep_for(chrono::seconds(3));
-            clearTerminal();
-        } else if (input == "6") {
-            newVersion();
-        } else {
-            clearTerminal();
-        }
+        string choice;
+        getline(cin, choice);
+
+        if (choice == "1") loginDamega();
+        else if (choice == "2") getExamNumber();
+        else if (choice == "3") exportRegionalRank();
+        else if (choice == "4") getSchoolcode();
+        else if (choice == "5") getSchool();
+        else if (choice == "6") checkUpdate();
+        else clearScreen();
     }
 
     return 0;
